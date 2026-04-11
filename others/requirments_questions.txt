@@ -1,5 +1,0 @@
---using sqlite for a small database functionality
---for user ticket cancellation before 24hrs full refund
---admin password hard coded in "code itself"  user password stored in database
---train contains classed like Ac,Sleeper 
---
