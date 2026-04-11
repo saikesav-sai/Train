@@ -1,17 +1,5 @@
-from config import (ADMIN_PASSWORD, ADMIN_USERNAME, GOODBYE_MESSAGE,
-                    INVALID_OPTION_MESSAGE, LOGIN_FAILURE_MESSAGE)
-
-
-def admin_train_registration():
-    print("Admin Train Registration operation selected.")
-
-
-def train_details_update_by_admin():
-    print("Train Details Update by Admin operation selected.")
-
-
-def delete_train_by_admin():
-    print("Delete Train by Admin operation selected.")
+from admin.train_management import (admin_train_registration,delete_train_by_admin,train_details_update_by_admin)
+from config import (ADMIN_PASSWORD, ADMIN_USERNAME, GOODBYE_MESSAGE,INVALID_OPTION_MESSAGE, LOGIN_FAILURE_MESSAGE)
 
 
 def admin_login():
