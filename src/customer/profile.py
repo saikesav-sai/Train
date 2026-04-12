@@ -21,11 +21,13 @@ def customer_registration():
     initialize_database()
 
     name = input("Enter Name: ").strip()
+    username = input("Enter UserName: ").strip()
     email = input("Enter Email: ").strip()
     phone = input("Enter Phone Number: ").strip()
+    password = input("Enter Password: ").strip()
     address = input("Enter Address: ").strip()
 
-    if not name or not email or not phone or not address:
+    if not name or not username or not email or not phone or not password or not address:
         print("Incomplete input. Please provide all required customer details.")
         return
 
@@ -45,11 +47,11 @@ def customer_registration():
         with get_connection() as connection:
             cursor = connection.cursor()
             cursor.execute(
-                "SELECT 1 FROM customers WHERE LOWER(email) = LOWER(?) OR phone = ? LIMIT 1",
-                (email, phone),
+                "SELECT 1 FROM customers WHERE username = ? OR LOWER(email) = LOWER(?) OR phone = ? LIMIT 1",
+                (username, email, phone),
             )
             if cursor.fetchone() is not None:
-                print("Customer with same email or phone already exists.")
+                print("Customer with same username, email or phone already exists.")
                 return
 
             cursor.execute(
@@ -57,7 +59,7 @@ def customer_registration():
                 INSERT INTO customers (name,email,phone,address,username,password,is_active)
                 VALUES (?, ?, ?, ?, ?, ?, 1)
                 """,
-                (name, email, phone, address, email, phone),
+                (name, email, phone, address, username, password),
             )
             connection.commit()
 
