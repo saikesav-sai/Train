@@ -1,7 +1,15 @@
 import re
 import sqlite3
 
-from config import (DB_ERROR_MESSAGE, INCOMPLETE_INPUT_MESSAGE,INVALID_OPTION_MESSAGE, INVALID_ROUTE_MESSAGE,INVALID_STATION_NAME_MESSAGE, INVALID_TIME_FORMAT_MESSAGE,INVALID_TRAIN_NAME_MESSAGE, INVALID_TRAIN_NUMBER_MESSAGE,TRAIN_ALREADY_EXISTS_MESSAGE, TRAIN_CONFLICT_MESSAGE,TRAIN_NOT_FOUND_MESSAGE, TRAIN_REGISTERED_MESSAGE,TRAIN_UPDATE_CANCELLED_MESSAGE,TRAIN_UPDATE_SUCCESS_MESSAGE)
+from config import (DB_ERROR_MESSAGE, INCOMPLETE_INPUT_MESSAGE,
+                    INVALID_OPTION_MESSAGE, INVALID_ROUTE_MESSAGE,
+                    INVALID_STATION_NAME_MESSAGE, INVALID_TIME_FORMAT_MESSAGE,
+                    INVALID_TRAIN_NAME_MESSAGE, INVALID_TRAIN_NUMBER_MESSAGE,
+                    TRAIN_ALREADY_EXISTS_MESSAGE, TRAIN_CONFLICT_MESSAGE,
+                    TRAIN_DELETE_CANCELLED_MESSAGE,
+                    TRAIN_DELETE_SUCCESS_MESSAGE, TRAIN_NOT_FOUND_MESSAGE,
+                    TRAIN_REGISTERED_MESSAGE, TRAIN_UPDATE_CANCELLED_MESSAGE,
+                    TRAIN_UPDATE_SUCCESS_MESSAGE)
 from data.db import get_connection, initialize_database
 
 
@@ -70,6 +78,21 @@ def train_number_exists(connection, train_number):
         (train_number,),
     )
     return cursor.fetchone() is not None
+
+
+def cancel_train_bookings_if_exists(connection, train_number):
+    cursor = connection.cursor()
+    cursor.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'bookings' LIMIT 1")
+    if cursor.fetchone() is None:
+        return
+    cursor.execute("PRAGMA table_info(bookings)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "train_number" not in columns:
+        return
+    if "status" in columns:
+        cursor.execute("UPDATE bookings SET status = 'Cancelled' WHERE train_number = ?", (train_number,))
+    elif "booking_status" in columns:
+        cursor.execute("UPDATE bookings SET booking_status = 'Cancelled' WHERE train_number = ?", (train_number,))
 
 def save_train(connection, train_number, train_name, origin, destination, intermediate_stops, schedule):
     cursor = connection.cursor()
@@ -341,4 +364,34 @@ def train_details_update_by_admin():
         print(DB_ERROR_MESSAGE)
 
 def delete_train_by_admin():
-    print("Delete Train by Admin operation selected.")
+    initialize_database()
+
+    train_number = input("Enter Train Number to search: ").strip()
+    if is_blank(train_number):
+        print(INCOMPLETE_INPUT_MESSAGE)
+        return
+    if not is_valid_train_number(train_number):
+        print(INVALID_TRAIN_NUMBER_MESSAGE)
+        return
+
+    try:
+        with get_connection() as connection:
+            train_details = get_train_details(connection, train_number)
+            if train_details is None:
+                print(TRAIN_NOT_FOUND_MESSAGE)
+                return
+
+            print("Train found:")
+            show_train_details(train_details)
+
+            confirm = input("Confirm delete train? (yes/no): ").strip().lower()
+            if confirm != "yes":
+                print(TRAIN_DELETE_CANCELLED_MESSAGE)
+                return
+
+            cancel_train_bookings_if_exists(connection, train_number)
+            connection.execute("DELETE FROM trains WHERE train_number = ?", (train_number,))
+            connection.commit()
+            print(TRAIN_DELETE_SUCCESS_MESSAGE)
+    except sqlite3.Error:
+        print(DB_ERROR_MESSAGE)
