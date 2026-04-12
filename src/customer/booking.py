@@ -100,6 +100,12 @@ def ensure_booking_tables(connection):
         CREATE TABLE IF NOT EXISTS bookings (booking_id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT NOT NULL,train_number TEXT NOT NULL,origin_station TEXT NOT NULL,destination_station TEXT NOT NULL,travel_date TEXT NOT NULL,preferred_class TEXT NOT NULL,ticket_count INTEGER NOT NULL,total_fare REAL NOT NULL,status TEXT NOT NULL,booked_at TEXT NOT NULL,FOREIGN KEY (train_number) REFERENCES trains(train_number))
         """
     )
+    cursor.execute("PRAGMA table_info(bookings)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "cancelled_at" not in columns:
+        cursor.execute("ALTER TABLE bookings ADD COLUMN cancelled_at TEXT")
+    if "refund_amount" not in columns:
+        cursor.execute("ALTER TABLE bookings ADD COLUMN refund_amount REAL DEFAULT 0")
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS train_class_seats (train_number TEXT NOT NULL,class_name TEXT NOT NULL,total_seats INTEGER NOT NULL,available_seats INTEGER NOT NULL,PRIMARY KEY (train_number, class_name),FOREIGN KEY (train_number) REFERENCES trains(train_number) ON DELETE CASCADE)
@@ -269,8 +275,105 @@ def train_ticket_booking(logged_in_username):
         print(DB_ERROR_MESSAGE)
 
 
-def ticket_cancellation():
-    print("Ticket Cancellation operation selected.")
+def ticket_cancellation(logged_in_username):
+    initialize_database()
+
+    ticket_id_input = input("Enter Ticket ID: ").strip()
+    password = input("Enter Password: ").strip()
+
+    if not ticket_id_input or not password:
+        print("Incomplete input. Please provide ticket id and password.")
+        return
+
+    if not ticket_id_input.isdigit():
+        print("Invalid Ticket ID.")
+        return
+
+    ticket_id = int(ticket_id_input)
+
+    try:
+        with get_connection() as connection:
+            ensure_booking_tables(connection)
+            cursor = connection.cursor()
+
+            cursor.execute(
+                "SELECT 1 FROM customers WHERE username = ? AND password = ? AND is_active = 1 LIMIT 1",
+                (logged_in_username, password),
+            )
+            if cursor.fetchone() is None:
+                print("Please Enter Correct UserName and Password")
+                return
+
+            cursor.execute(
+                """
+                SELECT booking_id,username,train_number,origin_station,travel_date,preferred_class,ticket_count,total_fare,statusFROM bookings WHERE booking_id = ? LIMIT 1
+                """,
+                (ticket_id,),
+            )
+            booking = cursor.fetchone()
+            if booking is None:
+                print("Ticket ID does not exist.")
+                return
+
+            booking_id, username, train_number, origin_station, travel_date, preferred_class, ticket_count, total_fare, status = booking
+
+            if username != logged_in_username:
+                print("Ticket does not belong to logged in customer.")
+                return
+
+            if (status or "").lower() == "cancelled":
+                print("Ticket is already cancelled.")
+                return
+
+            cursor.execute(
+                """
+                SELECT departure_time FROM train_stops WHERE train_number = ? AND LOWER(TRIM(station_name)) = LOWER(TRIM(?)) LIMIT 1 """,
+                (train_number, origin_station),
+            )
+            stop_row = cursor.fetchone()
+            if stop_row is None:
+                print("Unable to validate cancellation window.")
+                return
+
+            departure_time = stop_row[0]
+            departure_datetime = datetime.strptime(f"{travel_date} {departure_time}", "%Y-%m-%d %H:%M")
+            now = datetime.now()
+
+            if now >= departure_datetime:
+                print("Cancellation window has closed for this ticket.")
+                return
+
+            confirm = input("Confirm cancellation? (yes/no): ").strip().lower()
+            if confirm != "yes":
+                print("Ticket cancellation aborted.")
+                return
+
+            hours_left = (departure_datetime - now).total_seconds() / 3600
+            refund_amount = total_fare if hours_left > 24 else 0
+            cancelled_at = now.strftime("%Y-%m-%d %H:%M:%S")
+
+            cursor.execute(
+                """
+                UPDATE bookings SET status = 'Cancelled', cancelled_at = ?, refund_amount = ? WHERE booking_id = ?
+                """,
+                (cancelled_at, refund_amount, booking_id),
+            )
+
+            ensure_class_seats_for_train(connection, train_number)
+            cursor.execute(
+                """
+                UPDATE train_class_seats
+                SET available_seats = MIN(total_seats, available_seats + ?)
+                WHERE train_number = ? AND class_name = ?
+                """,
+                (ticket_count, train_number, preferred_class),
+            )
+
+            connection.commit()
+            print("Ticket cancelled successfully.")
+            print(f"Refund Amount: {refund_amount}")
+    except sqlite3.Error:
+        print(DB_ERROR_MESSAGE)
 
 def view_booking_history():
     print("View Booking History operation selected.")

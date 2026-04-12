@@ -56,7 +56,7 @@ def show_customer_menu(logged_in_username):
         elif choice == "5":
             train_ticket_booking(logged_in_username)
         elif choice == "6":
-            ticket_cancellation()
+            ticket_cancellation(logged_in_username)
         elif choice == "7":
             view_booking_history()
         elif choice == "8":
