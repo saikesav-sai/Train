@@ -58,7 +58,7 @@ def show_customer_menu(logged_in_username):
         elif choice == "6":
             ticket_cancellation(logged_in_username)
         elif choice == "7":
-            view_booking_history()
+            view_booking_history(logged_in_username)
         elif choice == "8":
             print(GOODBYE_USER_MESSAGE)
             break

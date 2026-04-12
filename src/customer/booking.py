@@ -306,7 +306,7 @@ def ticket_cancellation(logged_in_username):
 
             cursor.execute(
                 """
-                SELECT booking_id,username,train_number,origin_station,travel_date,preferred_class,ticket_count,total_fare,statusFROM bookings WHERE booking_id = ? LIMIT 1
+                SELECT booking_id,username,train_number,origin_station,travel_date,preferred_class,ticket_count,total_fare,status FROM bookings WHERE booking_id = ? LIMIT 1
                 """,
                 (ticket_id,),
             )
@@ -375,5 +375,34 @@ def ticket_cancellation(logged_in_username):
     except sqlite3.Error:
         print(DB_ERROR_MESSAGE)
 
-def view_booking_history():
-    print("View Booking History operation selected.")
+
+def view_booking_history(logged_in_username):
+    initialize_database()
+
+    try:
+        with get_connection() as connection:
+            ensure_booking_tables(connection)
+            cursor = connection.cursor()
+            cursor.execute(
+                """
+                SELECT b.travel_date,b.train_number,COALESCE(t.train_name, 'N/A'),b.status
+                FROM bookings b
+                LEFT JOIN trains t ON t.train_number = b.train_number
+                WHERE b.username = ?
+                ORDER BY b.travel_date DESC, b.booking_id DESC
+                """,
+                (logged_in_username,),
+            )
+            history_rows = cursor.fetchall()
+
+        if not history_rows:
+            print("No booking history found for this customer.")
+            return
+
+        print("Booking History")
+        print(f"{'Date':<12} {'Train Number':<15} {'Train Name':<25} {'Status':<12}")
+        print("-" * 70)
+        for travel_date, train_number, train_name, status in history_rows:
+            print(f"{travel_date:<12} {train_number:<15} {train_name:<25} {status:<12}")
+    except sqlite3.Error:
+        print(DB_ERROR_MESSAGE)
