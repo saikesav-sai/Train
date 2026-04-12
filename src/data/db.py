@@ -38,6 +38,16 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1)
             """
         )
+        cursor.execute("PRAGMA table_info(customers)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "name" not in columns:
+            cursor.execute("ALTER TABLE customers ADD COLUMN name TEXT")
+        if "email" not in columns:
+            cursor.execute("ALTER TABLE customers ADD COLUMN email TEXT")
+        if "phone" not in columns:
+            cursor.execute("ALTER TABLE customers ADD COLUMN phone TEXT")
+        if "address" not in columns:
+            cursor.execute("ALTER TABLE customers ADD COLUMN address TEXT")
         cursor.execute(
             """
             INSERT OR IGNORE INTO customers (username,password,is_active) VALUES (?, ?, 1)

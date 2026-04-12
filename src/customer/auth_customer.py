@@ -1,6 +1,9 @@
-from config import (GOODBYE_USER_MESSAGE, INVALID_OPTION_MESSAGE,LOGIN_FAILURE_MESSAGE)
-from customer.booking import (display_available_trains, ticket_cancellation,train_ticket_booking, view_booking_history)
-from customer.profile import (customer_details_update, customer_registration,customer_soft_delete)
+from config import (GOODBYE_USER_MESSAGE, INVALID_OPTION_MESSAGE,
+                    LOGIN_FAILURE_MESSAGE)
+from customer.booking import (display_available_trains, ticket_cancellation,
+                              train_ticket_booking, view_booking_history)
+from customer.profile import (customer_details_update, customer_registration,
+                              customer_soft_delete)
 from data.db import get_connection, initialize_database
 
 
@@ -62,5 +65,20 @@ def show_customer_menu():
 
 
 def run_customer_portal():
-    if customer_login():
-        show_customer_menu()
+    while True:
+        print("\nCustomer Access")
+        print("1) Login")
+        print("2) Register")
+        print("3) Back")
+
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            if customer_login():
+                show_customer_menu()
+        elif choice == "2":
+            customer_registration()
+        elif choice == "3":
+            break
+        else:
+            print(INVALID_OPTION_MESSAGE)
