@@ -1,7 +1,8 @@
 import os
 import sqlite3
 
-from config import DB_FILE_NAME
+from config import (DB_FILE_NAME, DEFAULT_CUSTOMER_PASSWORD,
+                    DEFAULT_CUSTOMER_USERNAME)
 
 
 def get_db_path():
@@ -31,5 +32,16 @@ def initialize_database():
             CREATE TABLE IF NOT EXISTS train_stops (id INTEGER PRIMARY KEY AUTOINCREMENT,train_number TEXT NOT NULL,stop_order INTEGER NOT NULL,station_name TEXT NOT NULL,arrival_time TEXT NOT NULL,departure_time TEXT NOT NULL,FOREIGN KEY (train_number) REFERENCES trains(train_number) ON DELETE CASCADE
             )
             """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS customers (id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT UNIQUE NOT NULL,password TEXT NOT NULL,is_active INTEGER NOT NULL DEFAULT 1)
+            """
+        )
+        cursor.execute(
+            """
+            INSERT OR IGNORE INTO customers (username,password,is_active) VALUES (?, ?, 1)
+            """,
+            (DEFAULT_CUSTOMER_USERNAME, DEFAULT_CUSTOMER_PASSWORD),
         )
         connection.commit()

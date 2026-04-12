@@ -7,6 +7,10 @@ INVALID_OPTION_MESSAGE = (
     "You have selected an inappropriate option. Kindly select an appropriate option."
 )
 GOODBYE_MESSAGE = "Good Bye!!. Terminating the Program"
+GOODBYE_USER_MESSAGE = "Good Bye User!!. Terminating the Program"
+
+DEFAULT_CUSTOMER_USERNAME = "user"
+DEFAULT_CUSTOMER_PASSWORD = "user123"
 
 TRAIN_ALREADY_EXISTS_MESSAGE = "Train number already exists. Please enter a unique train number."
 INCOMPLETE_INPUT_MESSAGE = "Incomplete input. Please provide all required train details."
