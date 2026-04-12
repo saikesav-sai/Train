@@ -67,8 +67,63 @@ def customer_registration():
     except sqlite3.Error:
         print(DB_ERROR_MESSAGE)
 
-def customer_details_update():
-    print("Customer Details Update operation selected.")
+def customer_details_update(logged_in_username):
+    initialize_database()
+
+    try:
+        with get_connection() as connection:
+            cursor = connection.cursor()
+            cursor.execute(
+                "SELECT name,email,phone,address FROM customers WHERE username = ? AND is_active = 1 LIMIT 1",
+                (logged_in_username,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                print("Customer details not found.")
+                return
+
+            current_name, current_email, current_phone, current_address = row
+            name = input(f"Enter Name [{current_name or ''}]: ").strip() or (current_name or "")
+            email = input(f"Enter Email [{current_email or ''}]: ").strip() or (current_email or "")
+            phone = input(f"Enter Phone Number [{current_phone or ''}]: ").strip() or (current_phone or "")
+            address = input(f"Enter Address [{current_address or ''}]: ").strip() or (current_address or "")
+
+            if not name or not email or not phone or not address:
+                print("Incomplete input. Please provide all required customer details.")
+                return
+
+            if not is_valid_name(name):
+                print("Invalid name. Name should contain only letters and spaces.")
+                return
+
+            if not is_valid_email(email):
+                print("Invalid email format.")
+                return
+
+            if not is_valid_phone(phone):
+                print("Invalid phone number. Enter exactly 10 digits.")
+                return
+
+            cursor.execute(
+                "SELECT 1 FROM customers WHERE (LOWER(email) = LOWER(?) OR phone = ?) AND username != ? LIMIT 1",
+                (email, phone, logged_in_username),
+            )
+            if cursor.fetchone() is not None:
+                print("Customer with same email or phone already exists.")
+                return
+
+            cursor.execute(
+                """
+                UPDATE customers
+                SET name = ?, email = ?, phone = ?, address = ?
+                WHERE username = ? AND is_active = 1
+                """,
+                (name, email, phone, address, logged_in_username),
+            )
+            connection.commit()
+            print("Customer details updated successfully.")
+    except sqlite3.Error:
+        print(DB_ERROR_MESSAGE)
 
 def customer_soft_delete():
     print("Customer Soft Delete operation selected.")

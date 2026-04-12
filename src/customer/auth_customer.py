@@ -24,12 +24,12 @@ def customer_login():
         password = input("Password: ").strip()
 
         if is_customer_login_valid(username, password):
-            return True
+            return username
 
         print(LOGIN_FAILURE_MESSAGE)
 
 
-def show_customer_menu():
+def show_customer_menu(logged_in_username):
     while True:
         print("\nCustomer Menu")
         print("1) Customer Registration")
@@ -46,7 +46,7 @@ def show_customer_menu():
         if choice == "1":
             customer_registration()
         elif choice == "2":
-            customer_details_update()
+            customer_details_update(logged_in_username)
         elif choice == "3":
             customer_soft_delete()
         elif choice == "4":
@@ -74,8 +74,8 @@ def run_customer_portal():
         choice = input("Enter your choice: ").strip()
 
         if choice == "1":
-            if customer_login():
-                show_customer_menu()
+            logged_in_username = customer_login()
+            show_customer_menu(logged_in_username)
         elif choice == "2":
             customer_registration()
         elif choice == "3":
