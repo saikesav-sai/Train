@@ -125,5 +125,28 @@ def customer_details_update(logged_in_username):
     except sqlite3.Error:
         print(DB_ERROR_MESSAGE)
 
-def customer_soft_delete():
-    print("Customer Soft Delete operation selected.")
+def customer_soft_delete(logged_in_username):
+    initialize_database()
+
+    confirm = input("Confirm account deactivation? (yes/no): ").strip().lower()
+    if confirm != "yes":
+        print("Customer soft delete operation cancelled.")
+        return False
+
+    try:
+        with get_connection() as connection:
+            cursor = connection.cursor()
+            cursor.execute(
+                "UPDATE customers SET is_active = 0 WHERE username = ? AND is_active = 1",
+                (logged_in_username,),
+            )
+            if cursor.rowcount == 0:
+                print("Customer account not found or already inactive.")
+                return False
+
+            connection.commit()
+            print("Customer account deactivated successfully.")
+            return True
+    except sqlite3.Error:
+        print(DB_ERROR_MESSAGE)
+        return False

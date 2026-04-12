@@ -48,7 +48,9 @@ def show_customer_menu(logged_in_username):
         elif choice == "2":
             customer_details_update(logged_in_username)
         elif choice == "3":
-            customer_soft_delete()
+            if customer_soft_delete(logged_in_username):
+                print(GOODBYE_USER_MESSAGE)
+                break
         elif choice == "4":
             display_available_trains()
         elif choice == "5":
