@@ -1,0 +1,167 @@
+TRAIN CONSOLE BASED APPLICATION - IMPLEMENTATION PLAN
+Don't write any comments in the code
+make the function name and coding style in a normal human level not like AI
+Project Goal
+Build a Python console-based train booking system that satisfies all 12 user stories (US001-US012), including required validations, menu flows, and database operations.
+
+Locked Decisions
+- Database: SQLite
+- Authentication: Hybrid (fixed admin credentials + DB-based customer accounts)
+- Seat model: Per-train per-class capacity (Sleeper, AC)
+- Refund policy: 100% refund only when cancellation is more than 24 hours before departure, otherwise no refund
+
+Suggested Project Structure (Python)
+
+Train_Console_Based_Application/
+	src/
+                main.py                    # app start + direct admin stage entry
+		config.py                  # constants (limits, credentials, messages)
+		common/
+			validators.py          # name/email/phone/date/menu validations
+			utils.py               # date parsing, duration, formatting
+		admin/
+			auth_admin.py         # US001 login + admin menu loop
+			train_management.py   # US002, US003, US004
+		customer/
+			auth_customer.py      # US005 login + customer menu loop
+			profile.py            # US006, US007, US008
+			booking.py            # US009, US010, US011, US012
+		data/
+			db.py                 # sqlite connection and transactions
+			repository.py         # all SQL queries/CRUD
+			models.py             # Train, Customer, Booking entities
+	db/
+		schema.sql
+		seed.sql
+
+User Story to File Flow (Each User Story = One Stage)
+- Stage 1 (US001): src/admin/auth_admin.py
+- Stage 2 (US002): src/admin/train_management.py
+- Stage 3 (US003): src/admin/train_management.py
+- Stage 4 (US004): src/admin/train_management.py
+- Stage 5 (US005): src/customer/auth_customer.py
+- Stage 6 (US006): src/customer/profile.py
+- Stage 7 (US007): src/customer/profile.py
+- Stage 8 (US008): src/customer/profile.py
+- Stage 9 (US009): src/customer/booking.py
+- Stage 10 (US010): src/customer/booking.py
+- Stage 11 (US011): src/customer/booking.py
+- Stage 12 (US012): src/customer/booking.py
+- Shared in every stage: src/common/validators.py + src/data/repository.py
+
+Stage-wise Delivery Plan (Each User Story is a Stage)
+
+        Pre-Stage: Technical Foundation (Do this once before Stage 1)
+        - Create 4-folder structure (common, admin, customer, data) and starter files (main.py, config.py).
+        - Setup SQLite schema and seed data in db/schema.sql and db/seed.sql.
+        - Implement shared validators and utility helpers.
+
+        Stage 1 (US001): Admin Login + Admin Menu
+        - Entry point: main.py directly calls run_admin_portal() from admin/auth_admin.py.
+        - Implementation style: direct input/print flow for manual use (no test-hook parameters).
+        - Fixed credentials: admin/admin123.
+        - Failed login message: Please Enter Correct UserName and Password
+        - Menu options 1-4 and invalid-option handling loop.
+
+        Stage 2 (US002): Admin Train Registration
+        - Add train number, train name, route, schedule, class capacities.
+        - Validate unique train number and mandatory inputs.
+
+        Stage 3 (US003): Train Details Update by Admin
+        - Search by train number and update selected fields.
+        - Enforce format checks and schedule conflict prevention.
+
+        Stage 4 (US004): Delete Train by Admin
+        - Search by train number and confirm delete.
+        - Mark related bookings as Cancelled and safely remove/deactivate train.
+
+        Stage 5 (US005): Customer Login + Customer Menu
+        - DB-based login for active customers only.
+        - Menu options 1-8 and invalid-option handling loop.
+
+        Stage 6 (US006): Customer Registration
+        - Collect name, email, phone, address.
+        - Validate name/email/phone and handle duplicates.
+
+        Stage 7 (US007): Customer Details Update
+        - Update name, email, phone, address.
+        - Re-validate updated data before save.
+
+        Stage 8 (US008): Customer Soft Delete
+        - Mark customer account inactive (not hard delete).
+        - Keep history and block inactive users from login/booking.
+
+        Stage 9 (US009): Display Available Trains
+        - Search by origin, destination, travel date.
+        - Validate station existence and date within next 3 months.
+        - Show train info, timings, duration, classes, and seat availability.
+
+        Stage 10 (US010): Train Ticket Booking
+        - Validate train/class/date/route/ticket count.
+        - Enforce max 6 tickets in one session.
+        - Show fare, confirm/amend, save booking, reduce seats, print ticket.
+
+        Stage 11 (US011): Ticket Cancellation
+        - Validate ticket id, ownership, password, and >24 hour cancellation window.
+        - Mark booking cancelled, release seats, and apply refund policy.
+
+        Stage 12 (US012): View Booking History
+        - Show booking history for logged-in customer only.
+        - Include date, train number, train name, and status.
+
+Stage-wise Manual Validation Checklist
+- Pre-Stage: Confirm app starts, database is created, and seed data loads.
+- Stage 1 (US001): Manually verify admin login, invalid login message, menu options 1-4, invalid option warning, and exit message.
+- Stage 2 (US002): Manually verify train registration, duplicate train number rejection, and required field checks.
+- Stage 3 (US003): Manually verify train update, format checks, and schedule conflict handling.
+- Stage 4 (US004): Manually verify train delete flow and associated booking cancellation handling.
+- Stage 5 (US005): Manually verify customer login/menu flow and invalid option handling.
+- Stage 6 (US006): Manually verify customer registration validations (name, email, phone, duplicates).
+- Stage 7 (US007): Manually verify customer detail update validations.
+- Stage 8 (US008): Manually verify soft delete and inactive user restrictions.
+- Stage 9 (US009): Manually verify available train search by origin/destination/date with validation errors.
+- Stage 10 (US010): Manually verify booking flow, fare display, seat checks, and max 6 tickets/session rule.
+- Stage 11 (US011): Manually verify cancellation checks (ticket id, owner, password, 24-hour rule) and refund handling.
+- Stage 12 (US012): Manually verify customer-specific booking history display.
+- Cross-Stage: Manually run full flow end-to-end (admin create train -> customer book -> customer cancel -> history update).
+
+Validation Matrix (Must Be Covered)
+- Login failure handling for admin and customer
+- Invalid menu choice handling for both menus
+- Unique train number enforcement
+- Train schedule conflict prevention
+- Name/email/phone validation rules
+- Soft delete behavior for customer account
+- Station existence and travel-date range checks
+- Seat availability checks and 6-ticket/session limit
+- Ticket ownership and password check during cancellation
+- 24-hour cancellation rule enforcement
+- Customer-specific booking history scope
+
+Manual Verification Plan
+- Verify each stage using the stage-wise manual checklist before moving forward.
+- Record observed inputs/outputs for each user story in a simple log file.
+- Re-run critical full flow after each new stage to ensure no regressions.
+
+Execution Order Summary
+1) Pre-Stage: base structure, schema, validators, utilities
+2) Stage 1: US001
+3) Stage 2: US002
+4) Stage 3: US003
+5) Stage 4: US004
+6) Stage 5: US005
+7) Stage 6: US006
+8) Stage 7: US007
+9) Stage 8: US008
+10) Stage 9: US009
+11) Stage 10: US010
+12) Stage 11: US011
+13) Stage 12: US012
+14) Final hardening: bug fixes and demo run
+
+Expected Deliverables
+- Working Python console app implementing US001-US012
+- SQLite schema + seed scripts
+- Validation-compliant flows with clear messages
+- README with run instructions and sample credentials
+
